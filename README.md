@@ -6,8 +6,8 @@ LifeCraft is a real-life productivity RPG application inspired by Minecraft 8-bi
 
 This repository is divided into two main parts:
 
-- **`backend/`**: A FastAPI-based Python application that handles the game logic, user profiles, attributes, quests, and rewards. It uses SQLAlchemy for database interactions (SQLite by default).
-- **`frontend/`**: A React application built with Vite, Tailwind CSS, and Framer Motion. It provides the user interface for tracking quests, viewing stats, and interacting with the RPG mechanics.
+1. **`backend/`**: A FastAPI-based Python application that handles the game logic, user profiles, attributes, quests, and rewards. It uses SQLAlchemy for database interactions (SQLite by default).
+2. **`frontend/`**: A React application built with Vite, Tailwind CSS, and Framer Motion. It provides the user interface for tracking quests, viewing stats, and interacting with the RPG mechanics.
 
 ## Architecture & Tech Stack
 
