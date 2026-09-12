@@ -79,6 +79,7 @@ def read_root():
 
 
 @app.get("/api/health")
+@app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     try:
         user_count = db.query(User).count()
@@ -98,6 +99,7 @@ def health_check(db: Session = Depends(get_db)):
 # --- AUTHENTICATION ENDPOINTS ---
 
 @app.post("/api/auth/register", response_model=TokenResponseSchema)
+@app.post("/auth/register", response_model=TokenResponseSchema)
 def register(data: UserRegisterSchema, db: Session = Depends(get_db)):
     username = data.username.strip()
     if len(username) < 3:
@@ -178,6 +180,7 @@ def register(data: UserRegisterSchema, db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/login", response_model=TokenResponseSchema)
+@app.post("/auth/login", response_model=TokenResponseSchema)
 def login(data: UserLoginSchema, db: Session = Depends(get_db)):
     username = data.username.strip()
 
@@ -236,6 +239,7 @@ def login(data: UserLoginSchema, db: Session = Depends(get_db)):
 
 
 @app.get("/api/auth/me", response_model=UserProfileSchema)
+@app.get("/auth/me", response_model=UserProfileSchema)
 def get_me(current_user: User = Depends(get_current_user)):
     return format_user_summary(current_user)
 
@@ -270,6 +274,7 @@ def sync_user_score_to_supabase(username: str, score: int, level: int, streak: i
 
 
 @app.get("/api/leaderboard", response_model=List[LeaderboardEntrySchema])
+@app.get("/leaderboard", response_model=List[LeaderboardEntrySchema])
 def get_leaderboard(db: Session = Depends(get_db)):
     """
     Fetch live rankings directly from Supabase 'leaderboard' table ordered by score descending.
@@ -344,6 +349,7 @@ def get_leaderboard(db: Session = Depends(get_db)):
 # --- GAMEPLAY & USER ENDPOINTS ---
 
 @app.get("/api/level-info/{level}")
+@app.get("/level-info/{level}")
 def get_level_info(level: int):
     if level < 1:
         raise HTTPException(status_code=400, detail="Level must be >= 1")
@@ -356,6 +362,7 @@ def get_level_info(level: int):
 
 
 @app.get("/api/users/{username}/summary", response_model=UserProfileSchema)
+@app.get("/users/{username}/summary", response_model=UserProfileSchema)
 def get_user_summary(username: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -364,6 +371,7 @@ def get_user_summary(username: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/quests/{quest_id}/toggle")
+@app.post("/quests/{quest_id}/toggle")
 def toggle_quest(quest_id: int, db: Session = Depends(get_db)):
     quest = db.query(Quest).filter(Quest.id == quest_id).first()
     if not quest:

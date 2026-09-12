@@ -1,0 +1,9 @@
+backend/venv/
+backend/.venv/
+frontend/node_modules/
+.venv/
+venv/
+.git/
+.tmp/
+.vscode/
+.idea/

@@ -1,3 +1,4 @@
+import os
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -7,7 +8,16 @@ logger = logging.getLogger("lifecraft.database")
 
 
 def create_resilient_engine():
+    is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
     db_url = settings.get_effective_database_url()
+
+    if is_serverless:
+        # In serverless environments, root is read-only. Use /tmp for SQLite.
+        db_url = "sqlite:////tmp/lifecraft.db"
+        return create_engine(
+            db_url,
+            connect_args={"check_same_thread": False},
+        )
 
     if db_url.startswith("postgresql"):
         try:

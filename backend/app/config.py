@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     SUPABASE_DB_PASSWORD: str = "RMbCDEYr92Q8VGbc"
     SUPABASE_PUBLISHABLE_KEY: str = "sb_publishable__TsIeaVC8lapuADbLFIJKg_UGNHbXgh"
     SUPABASE_SECRET_KEY: str = "sb_secret_hapSLOQKzDttn25Z2XBKpw_m9T757Ov"
-    SUPABASE_PROJECT_REF: Optional[str] = None
-    SUPABASE_URL: Optional[str] = None
+    SUPABASE_PROJECT_REF: Optional[str] = "llqradcrafoflbgtsiqr"
+    SUPABASE_URL: Optional[str] = "https://llqradcrafoflbgtsiqr.supabase.co"
 
     SECRET_KEY: str = "lifecraft_super_secret_jwt_key_minecraft_8bit_rpg_2026"
     ALGORITHM: str = "HS256"
