@@ -4,12 +4,25 @@ import * as THREE from 'three';
 const PANORAMA_THEMES = {
   sakura: {
     id: 'sakura',
-    name: '🌸 SAKURA BIOME',
-    shortName: 'Sakura Grove',
-    subtitle: 'Cherry Blossom Mountain',
+    name: '🌸 SAKURA GROVE',
+    shortName: 'Sakura Night',
+    subtitle: 'Lanterns, Pond & Shaders',
+    videoUrl: '/videos/sakura_night.mp4',
+    posterUrl: '/videos/sakura_night_poster.jpg',
     path: '/panoramas/sakura',
     particleType: 'petals',
     vignetteOpacity: 'bg-black/25'
+  },
+  sakura_day: {
+    id: 'sakura_day',
+    name: '☀️ SAKURA SUNSET',
+    shortName: 'Sakura Sunset',
+    subtitle: 'Golden Hour & Shaders',
+    videoUrl: '/videos/sakura_day.mp4',
+    posterUrl: '/videos/sakura_day_poster.jpg',
+    path: '/panoramas/sakura',
+    particleType: 'petals',
+    vignetteOpacity: 'bg-black/20'
   },
   classic: {
     id: 'classic',
@@ -46,9 +59,15 @@ export default function MinecraftPanorama({
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const particleCanvasRef = useRef(null);
+  const videoRef = useRef(null);
 
   const [internalTheme, setInternalTheme] = useState(theme);
   const activeThemeKey = theme || internalTheme || 'sakura';
+  const activeTheme = PANORAMA_THEMES[activeThemeKey] || PANORAMA_THEMES.sakura;
+  const isVideoTheme = Boolean(activeTheme.videoUrl);
+
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [mouseParallax, setMouseParallax] = useState({ x: 0, y: 0 });
 
   const [hasWebGL, setHasWebGL] = useState(() => {
     try {
@@ -64,6 +83,29 @@ export default function MinecraftPanorama({
     setInternalTheme(newTheme);
     if (onThemeChange) onThemeChange(newTheme);
   };
+
+  // Sync video play/pause
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPaused) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isPaused, activeThemeKey]);
+
+  // Sync video playback speed
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = Math.max(0.25, Math.min(2.0, speed));
+    }
+  }, [speed]);
+
+  // Reset video loaded flag when theme changes
+  useEffect(() => {
+    setVideoLoaded(false);
+  }, [activeThemeKey]);
 
   // Three.js refs to preserve across renders
   const sceneRef = useRef(null);
@@ -86,9 +128,9 @@ export default function MinecraftPanorama({
     speedRef.current = speed;
   }, [isPaused, speed]);
 
-  // Setup Three.js Scene and Cube Texture
+  // Setup Three.js Scene and Cube Texture (only active when not using video background)
   useEffect(() => {
-    if (!hasWebGL) return;
+    if (isVideoTheme || !hasWebGL) return;
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
@@ -220,6 +262,7 @@ export default function MinecraftPanorama({
     const normX = (clientX / window.innerWidth) * 2 - 1;
     const normY = -(clientY / window.innerHeight) * 2 + 1;
     mouseOffsetRef.current = { x: normX, y: normY };
+    setMouseParallax({ x: normX, y: normY });
 
     if (!isDraggingRef.current || !cameraPivotRef.current) return;
 
@@ -298,8 +341,8 @@ export default function MinecraftPanorama({
     const renderParticles = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Real-Time Minecraft Shaders Layer: Volumetric God Rays & Sunlight Bloom
-      if (shadersEnabled && activeThemeKey === 'sakura') {
+      // Real-Time Minecraft Shaders Layer: Volumetric God Rays & Sunlight Bloom (for cubemap themes)
+      if (shadersEnabled && !isVideoTheme && activeThemeKey === 'sakura') {
         const currentYaw = cameraPivotRef.current ? cameraPivotRef.current.rotation.y : 0;
         const sunAngle = -Math.PI * 0.5; // Sun is in +X / Face 1 direction
         const angleDiff = ((currentYaw - sunAngle + Math.PI) % (Math.PI * 2)) - Math.PI;
@@ -444,8 +487,6 @@ export default function MinecraftPanorama({
     };
   }, [activeThemeKey, showParticles, shadersEnabled]);
 
-  const activeTheme = PANORAMA_THEMES[activeThemeKey] || PANORAMA_THEMES.classic;
-
   return (
     <div 
       ref={containerRef}
@@ -453,27 +494,69 @@ export default function MinecraftPanorama({
       className="absolute inset-0 w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
       title="Click and drag to look around the Minecraft world"
     >
-      {/* 1. WebGL 3D Panorama Canvas */}
-      {hasWebGL ? (
-        <canvas 
-          ref={canvasRef} 
-          className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-      ) : null}
+      {/* 1. Live Minecraft Shaders Video (Sakura Grove / Sakura Sunset) */}
+      {isVideoTheme ? (
+        <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
+          {/* Instant crisp poster image to prevent any black flicker on load */}
+          <img
+            src={activeTheme.posterUrl}
+            alt={activeTheme.name}
+            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+            style={{
+              transform: `scale(1.04) translate(${mouseParallax.x * -10}px, ${mouseParallax.y * -10}px)`,
+              transition: 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)'
+            }}
+          />
 
-      {/* 2. Seamless CSS Moving Panorama Fallback (also visible while textures load) */}
-      {(!hasWebGL || !isLoaded) && (
-        <div 
-          className="absolute inset-0 w-full h-full bg-panorama-moving transition-opacity duration-1000"
-          style={{
-            backgroundImage: `url(${activeTheme.path}/panorama_seamless.jpg)`
-          }}
-        />
+          {/* Authentic 1080p Minecraft Shaders Video Loop */}
+          <video
+            ref={videoRef}
+            key={activeTheme.videoUrl}
+            src={activeTheme.videoUrl}
+            poster={activeTheme.posterUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            onCanPlay={() => setVideoLoaded(true)}
+            className={`absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-opacity duration-700 ${
+              videoLoaded ? 'opacity-100' : 'opacity-0'
+            } ${
+              shadersEnabled
+                ? 'filter contrast-[1.08] saturate-[1.15] brightness-[1.02]'
+                : 'filter contrast-[0.98] saturate-[0.88] brightness-[0.96]'
+            }`}
+            style={{
+              transform: `scale(1.04) translate(${mouseParallax.x * -10}px, ${mouseParallax.y * -10}px)`,
+              transition: 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1), filter 0.4s ease'
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          {/* 1. WebGL 3D Panorama Canvas (Classic Beta / Midnight) */}
+          {hasWebGL ? (
+            <canvas 
+              ref={canvasRef} 
+              className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ${
+                isLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ) : null}
+
+          {/* 2. Seamless CSS Moving Panorama Fallback */}
+          {(!hasWebGL || !isLoaded) && (
+            <div 
+              className="absolute inset-0 w-full h-full bg-panorama-moving transition-opacity duration-1000"
+              style={{
+                backgroundImage: `url(${activeTheme.path}/panorama_seamless.jpg)`
+              }}
+            />
+          )}
+        </>
       )}
 
-      {/* 3. Floating Ambient Particles & Real-Time Shaders Overlay */}
+      {/* 2. Floating Ambient Particles (Sakura Petals drift across the screen) */}
       {showParticles && (
         <canvas 
           ref={particleCanvasRef}
@@ -481,8 +564,11 @@ export default function MinecraftPanorama({
         />
       )}
 
-      {/* 4. Real-Time Shader Lighting & Vignette Overlay */}
-      {shadersEnabled && activeThemeKey === 'sakura' && (
+      {/* 3. Real-Time Shader Lighting, Glow & Readability Vignette */}
+      {shadersEnabled && isVideoTheme && (
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-pink-500/10 via-transparent to-amber-400/10 mix-blend-screen transition-opacity duration-700" />
+      )}
+      {shadersEnabled && !isVideoTheme && activeThemeKey === 'sakura' && (
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-amber-500/10 via-transparent to-pink-400/15 mix-blend-screen transition-opacity duration-700" />
       )}
       <div 
