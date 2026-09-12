@@ -30,16 +30,19 @@ export default function MainMenu() {
   const [userData, setUserData] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Live Panorama Background States
+  // Live Panorama Background States (Default: SAKURA BIOME)
   const [panoramaTheme, setPanoramaTheme] = useState(() => {
-    return localStorage.getItem('lifecraft_theme') || 'classic';
+    const saved = localStorage.getItem('lifecraft_theme');
+    if (saved && (saved === 'cherry' || saved === 'sakura')) return 'sakura';
+    return saved || 'sakura';
   });
   const [panoramaSpeed, setPanoramaSpeed] = useState(1.0);
   const [panoramaPaused, setPanoramaPaused] = useState(false);
 
   const handleThemeChange = (newTheme) => {
-    setPanoramaTheme(newTheme);
-    localStorage.setItem('lifecraft_theme', newTheme);
+    const actualTheme = newTheme === 'cherry' ? 'sakura' : newTheme;
+    setPanoramaTheme(actualTheme);
+    localStorage.setItem('lifecraft_theme', actualTheme);
   };
 
   // Cycle through available themes quickly
@@ -430,15 +433,15 @@ export default function MainMenu() {
                       </span>
                     </div>
                     <div 
-                      onClick={() => handleThemeChange('cherry')}
+                      onClick={() => handleThemeChange('sakura')}
                       className={`cursor-pointer border-2 p-3 text-center transition-all ${
-                        panoramaTheme === 'cherry' ? 'border-[#ff77aa] bg-neutral-850 shadow-md' : 'bg-neutral-800 border-black hover:border-neutral-600'
+                        (panoramaTheme === 'sakura' || panoramaTheme === 'cherry') ? 'border-[#ff77aa] bg-neutral-850 shadow-md ring-2 ring-pink-500/50' : 'bg-neutral-800 border-black hover:border-neutral-600'
                       }`}
                     >
-                      <span className="font-pixel text-xs text-[#ff77aa] block mb-1">COLLEGE BIOME</span>
-                      <p className="text-[11px] text-gray-400 mb-2">TCET IT-D assignments, academic milestones.</p>
+                      <span className="font-pixel text-xs text-[#ff77aa] block mb-1">🌸 SAKURA BIOME</span>
+                      <p className="text-[11px] text-gray-400 mb-2">TCET IT-D assignments, Cherry Grove petals, calm focus.</p>
                       <span className="font-pixel text-[9px] text-[#ffff55] bg-black/50 px-2 py-0.5 border border-neutral-700 inline-block">
-                        {panoramaTheme === 'cherry' ? 'ACTIVE REALM' : 'SET REALM VIEW'}
+                        {(panoramaTheme === 'sakura' || panoramaTheme === 'cherry') ? 'ACTIVE REALM' : 'SET REALM VIEW'}
                       </span>
                     </div>
                   </div>

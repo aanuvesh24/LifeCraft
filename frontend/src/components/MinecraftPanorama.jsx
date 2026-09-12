@@ -2,37 +2,40 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 
 const PANORAMA_THEMES = {
+  sakura: {
+    id: 'sakura',
+    name: '🌸 SAKURA BIOME',
+    shortName: 'Sakura Grove',
+    subtitle: 'Cherry Blossom Mountain',
+    path: '/panoramas/sakura',
+    particleType: 'petals',
+    vignetteOpacity: 'bg-black/25'
+  },
   classic: {
     id: 'classic',
-    name: 'Classic Beta',
+    name: '🌲 CLASSIC BETA',
+    shortName: 'Classic Beta',
     subtitle: 'Beta 1.7.3 Nostalgia',
     path: '/panoramas/classic',
-    particleColor: 'rgba(255, 230, 150, 0.7)',
     particleType: 'dust',
     vignetteOpacity: 'bg-black/35'
   },
-  cherry: {
-    id: 'cherry',
-    name: 'Cherry Grove',
-    subtitle: 'Trails & Tales 1.20',
-    path: '/panoramas/cherry',
-    particleColor: 'rgba(255, 182, 193, 0.85)',
-    particleType: 'petals',
-    vignetteOpacity: 'bg-black/30'
-  },
   dark: {
     id: 'dark',
-    name: 'Midnight Shaders',
-    subtitle: 'Nighttime Campfire & Stars',
+    name: '🌙 MIDNIGHT SHADERS',
+    shortName: 'Midnight',
+    subtitle: 'Campfire & Stars',
     path: '/panoramas/dark',
-    particleColor: 'rgba(180, 220, 255, 0.8)',
     particleType: 'stars',
     vignetteOpacity: 'bg-black/20'
   }
 };
 
+// Backward-compatibility alias
+PANORAMA_THEMES.cherry = PANORAMA_THEMES.sakura;
+
 export default function MinecraftPanorama({
-  theme = 'classic',
+  theme = 'sakura',
   speed = 1.0,
   isPaused = false,
   showParticles = true,
@@ -43,7 +46,7 @@ export default function MinecraftPanorama({
   const particleCanvasRef = useRef(null);
 
   const [internalTheme, setInternalTheme] = useState(theme);
-  const activeThemeKey = theme || internalTheme || 'classic';
+  const activeThemeKey = theme || internalTheme || 'sakura';
 
   const [hasWebGL, setHasWebGL] = useState(() => {
     try {
@@ -261,18 +264,32 @@ export default function MinecraftPanorama({
     };
     window.addEventListener('resize', onResize);
 
-    const themeConfig = PANORAMA_THEMES[activeThemeKey] || PANORAMA_THEMES.classic;
-    const count = themeConfig.particleType === 'petals' ? 36 : 28;
+    const themeConfig = PANORAMA_THEMES[activeThemeKey] || PANORAMA_THEMES.sakura;
+    const isSakura = themeConfig.particleType === 'petals';
+    const count = isSakura ? 48 : 28;
+
+    const sakuraColors = [
+      'rgba(255, 183, 197, 0.9)', // Classic Sakura pink
+      'rgba(255, 160, 185, 0.85)', // Rose blossom
+      'rgba(255, 205, 220, 0.8)', // Pale blossom
+      'rgba(255, 140, 170, 0.9)', // Vibrant pink
+      'rgba(255, 240, 245, 0.95)' // White/pink tip
+    ];
 
     const particles = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 4 + 2,
-      speedX: themeConfig.particleType === 'petals' ? (Math.random() * 1.5 - 0.2) : (Math.random() * 0.6 - 0.3),
-      speedY: themeConfig.particleType === 'petals' ? (Math.random() * 1.2 + 0.6) : (Math.random() * -0.6 - 0.2),
+      size: Math.random() * 4.5 + 2.5,
+      speedX: isSakura ? (Math.random() * 1.8 + 0.4) : (Math.random() * 0.6 - 0.3),
+      speedY: isSakura ? (Math.random() * 1.4 + 0.8) : (Math.random() * -0.6 - 0.2),
       rotation: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.04,
-      opacity: Math.random() * 0.6 + 0.3,
+      rotSpeed: (Math.random() - 0.5) * 0.05,
+      flipAngle: Math.random() * Math.PI * 2,
+      flipSpeed: (Math.random() * 0.04 + 0.02),
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: Math.random() * 0.03 + 0.015,
+      opacity: Math.random() * 0.4 + 0.5,
+      color: sakuraColors[Math.floor(Math.random() * sakuraColors.length)],
       pulse: Math.random() * Math.PI
     }));
 
@@ -280,37 +297,60 @@ export default function MinecraftPanorama({
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
-        p.x += p.speedX;
-        p.y += p.speedY;
+        p.sway += p.swaySpeed;
+        p.flipAngle += p.flipSpeed;
         p.rotation += p.rotSpeed;
         p.pulse += 0.03;
 
-        // Wrap around bounds
+        // Sakura drifting motion with gentle wind breeze
+        if (isSakura) {
+          p.x += p.speedX + Math.sin(p.sway) * 0.8;
+          p.y += p.speedY;
+        } else {
+          p.x += p.speedX;
+          p.y += p.speedY;
+        }
+
+        // Wrap around screen bounds
         if (p.y > height + 20) {
           p.y = -20;
-          p.x = Math.random() * width;
+          p.x = Math.random() * (width + 100) - 50;
         } else if (p.y < -20) {
           p.y = height + 20;
-          p.x = Math.random() * width;
+          p.x = Math.random() * (width + 100) - 50;
         }
-        if (p.x > width + 20) p.x = -20;
-        else if (p.x < -20) p.x = width + 20;
+        if (p.x > width + 40) {
+          p.x = -20;
+          p.y = Math.random() * height;
+        } else if (p.x < -40) {
+          p.x = width + 20;
+        }
 
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
 
-        if (themeConfig.particleType === 'petals') {
-          // Minecraft Cherry Blossom Petal (pixelated square/petal)
-          ctx.fillStyle = themeConfig.particleColor;
+        if (isSakura) {
+          // 3D tumbling fluttering Sakura Petal
+          const flipScale = Math.cos(p.flipAngle);
+          ctx.scale(1, Math.abs(flipScale) * 0.8 + 0.2);
+
+          // Authentic Minecraft pixelated sakura petal
+          ctx.fillStyle = p.color;
           ctx.globalAlpha = p.opacity;
           ctx.fillRect(-p.size, -p.size * 0.7, p.size * 2, p.size * 1.4);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.fillRect(-p.size * 0.5, -p.size * 0.3, p.size, p.size * 0.6);
+
+          // Subtle inner petal texture highlight
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillRect(-p.size * 0.5, -p.size * 0.35, p.size, p.size * 0.7);
+
+          // Soft petal shadow
+          ctx.fillStyle = 'rgba(215, 100, 140, 0.35)';
+          ctx.fillRect(-p.size * 0.8, p.size * 0.2, p.size * 1.5, p.size * 0.4);
         } else if (themeConfig.particleType === 'stars') {
           // Glowing starry firefly
           const glow = Math.sin(p.pulse) * 0.3 + 0.7;
-          ctx.fillStyle = themeConfig.particleColor;
+          ctx.fillStyle = 'rgba(180, 220, 255, 0.8)';
           ctx.globalAlpha = p.opacity * glow;
           ctx.shadowBlur = 8;
           ctx.shadowColor = '#55ffff';
@@ -318,7 +358,7 @@ export default function MinecraftPanorama({
         } else {
           // Classic golden sunshine pixel dust
           const shimmer = Math.sin(p.pulse) * 0.25 + 0.75;
-          ctx.fillStyle = themeConfig.particleColor;
+          ctx.fillStyle = 'rgba(255, 230, 150, 0.7)';
           ctx.globalAlpha = p.opacity * shimmer;
           ctx.fillRect(-p.size * 0.5, -p.size * 0.5, p.size, p.size);
         }
