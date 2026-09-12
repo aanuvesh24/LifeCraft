@@ -29,7 +29,9 @@ import SplashText from './SplashText';
 import MinecraftPanorama, { PANORAMA_THEMES } from './MinecraftPanorama';
 import { supabase } from '../lib/supabase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
+  ? import.meta.env.VITE_API_URL 
+  : (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 export default function MainMenu() {
   const [activeModal, setActiveModal] = useState(null); // 'quests' | 'profile' | 'rewards' | 'leaderboard' | 'auth' | 'settings' | null
