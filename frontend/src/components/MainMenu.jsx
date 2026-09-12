@@ -29,7 +29,7 @@ import SplashText from './SplashText';
 import MinecraftPanorama, { PANORAMA_THEMES } from './MinecraftPanorama';
 import { supabase } from '../lib/supabase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
+const API_BASE_URL = (import.meta.env.VITE_API_URL && !(import.meta.env.PROD && import.meta.env.VITE_API_URL.includes('localhost:8000')))
   ? import.meta.env.VITE_API_URL 
   : (import.meta.env.PROD ? '' : 'http://localhost:8000');
 

@@ -26,10 +26,9 @@ def sync(project_ref: str = None):
         sys.exit(1)
 
     ref = ref.strip()
-    password = settings.SUPABASE_DB_PASSWORD
-    supabase_db_url = f"postgresql://postgres:{password}@db.{ref}.supabase.co:5432/postgres"
+    supabase_db_url = settings.get_effective_database_url()
 
-    print(f"Connecting to Supabase PostgreSQL at db.{ref}.supabase.co...")
+    print(f"Connecting to Supabase PostgreSQL ({supabase_db_url.split('@')[1] if '@' in supabase_db_url else supabase_db_url})...")
     try:
         remote_engine = create_engine(supabase_db_url, connect_args={"connect_timeout": 10})
         # Test connection

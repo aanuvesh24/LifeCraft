@@ -4,17 +4,21 @@ from typing import List, Union, Optional
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pathlib import Path
+
 logger = logging.getLogger("lifecraft.config")
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./lifecraft.db"
     SUPABASE_PROJECT_NAME: str = "LifeCraft"
-    SUPABASE_DB_PASSWORD: str = "RMbCDEYr92Q8VGbc"
-    SUPABASE_PUBLISHABLE_KEY: str = "sb_publishable__TsIeaVC8lapuADbLFIJKg_UGNHbXgh"
-    SUPABASE_SECRET_KEY: str = "sb_secret_hapSLOQKzDttn25Z2XBKpw_m9T757Ov"
-    SUPABASE_PROJECT_REF: Optional[str] = "llqradcrafoflbgtsiqr"
-    SUPABASE_URL: Optional[str] = "https://llqradcrafoflbgtsiqr.supabase.co"
+    SUPABASE_DB_PASSWORD: Optional[str] = None
+    SUPABASE_PUBLISHABLE_KEY: Optional[str] = None
+    SUPABASE_SECRET_KEY: Optional[str] = None
+    SUPABASE_PROJECT_REF: Optional[str] = None
+    SUPABASE_URL: Optional[str] = None
 
     SECRET_KEY: str = "lifecraft_super_secret_jwt_key_minecraft_8bit_rpg_2026"
     ALGORITHM: str = "HS256"
@@ -37,23 +41,38 @@ class Settings(BaseSettings):
     def get_effective_database_url(self) -> str:
         """
         Returns the active database URL.
-        If SUPABASE_PROJECT_REF is provided, builds a direct Supabase connection.
-        If DATABASE_URL is valid and non-placeholder, uses it.
+        If DATABASE_URL is set to a valid remote PostgreSQL URL, uses it directly.
+        If SUPABASE_PROJECT_REF and SUPABASE_DB_PASSWORD are provided, builds
+        the IPv4-compatible Supabase connection pooler URL.
         Otherwise falls back to SQLite.
         """
-        if self.SUPABASE_PROJECT_REF and self.SUPABASE_PROJECT_REF.strip():
-            ref = self.SUPABASE_PROJECT_REF.strip()
-            pw = self.SUPABASE_DB_PASSWORD
-            return f"postgresql://postgres:{pw}@db.{ref}.supabase.co:5432/postgres"
+        url = (self.DATABASE_URL or "").strip()
+        if (
+            url
+            and url.startswith("postgresql")
+            and "[project-ref]" not in url
+            and "[password]" not in url
+            and "YOUR_PROJECT_REF" not in url
+        ):
+            return url
 
-        url = self.DATABASE_URL.strip()
-        if not url or "[project-ref]" in url or "[password]" in url or "YOUR_PROJECT_REF" in url:
+        if (
+            self.SUPABASE_PROJECT_REF
+            and self.SUPABASE_PROJECT_REF.strip()
+            and self.SUPABASE_DB_PASSWORD
+            and self.SUPABASE_DB_PASSWORD.strip()
+        ):
+            ref = self.SUPABASE_PROJECT_REF.strip()
+            pw = self.SUPABASE_DB_PASSWORD.strip()
+            return f"postgresql://postgres.{ref}:{pw}@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
+
+        if not url or "sqlite" in url or "[project-ref]" in url or "[password]" in url or "YOUR_PROJECT_REF" in url:
             logger.info("Using local SQLite database: sqlite:///./lifecraft.db")
             return "sqlite:///./lifecraft.db"
         return url
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[str(BASE_DIR / ".env"), ".env"],
         env_file_encoding="utf-8",
         extra="ignore"
     )

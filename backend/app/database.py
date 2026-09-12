@@ -11,24 +11,16 @@ def create_resilient_engine():
     is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
     db_url = settings.get_effective_database_url()
 
-    if is_serverless:
-        # In serverless environments, root is read-only. Use /tmp for SQLite.
-        db_url = "sqlite:////tmp/lifecraft.db"
-        return create_engine(
-            db_url,
-            connect_args={"check_same_thread": False},
-        )
-
     if db_url.startswith("postgresql"):
         try:
             logger.info("Attempting connection to Supabase PostgreSQL...")
             test_engine = create_engine(
                 db_url,
-                connect_args={"connect_timeout": 4},
+                connect_args={"connect_timeout": 6},
                 pool_pre_ping=True,
                 pool_recycle=300,
-                pool_size=5,
-                max_overflow=10,
+                pool_size=2 if is_serverless else 5,
+                max_overflow=4 if is_serverless else 10,
             )
             with test_engine.connect() as conn:
                 conn.execute(text("SELECT 1;"))
@@ -36,10 +28,13 @@ def create_resilient_engine():
             return test_engine
         except Exception as e:
             logger.warning(
-                f"Notice: Supabase PostgreSQL direct TCP is not reachable from this network ({e}). "
-                "Seamlessly falling back to local SQLite database so LifeCraft runs uninterrupted."
+                f"Notice: Supabase PostgreSQL is not reachable ({e}). "
+                "Falling back to local SQLite database so LifeCraft runs uninterrupted."
             )
-            db_url = "sqlite:///./lifecraft.db"
+            db_url = "sqlite:////tmp/lifecraft.db" if is_serverless else "sqlite:///./lifecraft.db"
+
+    if is_serverless and db_url.startswith("sqlite"):
+        db_url = "sqlite:////tmp/lifecraft.db"
 
     return create_engine(
         db_url,

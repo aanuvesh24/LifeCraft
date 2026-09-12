@@ -7,3 +7,4 @@ venv/
 .tmp/
 .vscode/
 .idea/
+backend/requirements.txt
