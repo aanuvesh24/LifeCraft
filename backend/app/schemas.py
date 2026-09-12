@@ -59,3 +59,33 @@ class UserProfileSchema(BaseModel):
     rewards: List[CustomRewardSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserRegisterSchema(BaseModel):
+    username: str
+    password: str
+
+
+class UserLoginSchema(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponseSchema(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserProfileSchema
+
+
+class LeaderboardEntrySchema(BaseModel):
+    rank: int
+    username: str
+    score: int
+    level: int
+    streak: int
+    xp: Optional[float] = 0.0
+    coins: Optional[int] = 0
+    hearts: Optional[float] = 10.0
+    strength: Optional[int] = 10
+    intelligence: Optional[int] = 10
+    discipline: Optional[int] = 10

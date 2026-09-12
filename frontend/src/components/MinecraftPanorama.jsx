@@ -32,15 +32,6 @@ const PANORAMA_THEMES = {
     path: '/panoramas/classic',
     particleType: 'dust',
     vignetteOpacity: 'bg-black/35'
-  },
-  dark: {
-    id: 'dark',
-    name: '🌙 MIDNIGHT SHADERS',
-    shortName: 'Midnight',
-    subtitle: 'Campfire & Stars',
-    path: '/panoramas/dark',
-    particleType: 'stars',
-    vignetteOpacity: 'bg-black/20'
   }
 };
 
@@ -600,22 +591,6 @@ export default function MinecraftPanorama({
             {thm.shortName || thm.name}
           </button>
         ))}
-
-        <span className="text-neutral-600 text-xs font-mono">|</span>
-
-        <button
-          onClick={() => {
-            if (onToggleShaders) onToggleShaders();
-          }}
-          className={`px-2 py-0.5 font-pixel text-[9px] border transition-all cursor-pointer ${
-            shadersEnabled
-              ? 'bg-[#ffff55]/20 text-[#ffff55] border-[#ffff55] shadow-sm shadow-yellow-500/20'
-              : 'text-gray-500 border-neutral-800 hover:text-white'
-          }`}
-          title="Toggle BSL/Complementary Volumetric Shaders"
-        >
-          {shadersEnabled ? '✨ SHADERS ON' : 'SHADERS OFF'}
-        </button>
       </div>
     </div>
   );

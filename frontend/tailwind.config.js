@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         pixel: ['"Press Start 2P"', 'monospace'],
+        mc: ['"Pixelify Sans"', '"Press Start 2P"', 'sans-serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
