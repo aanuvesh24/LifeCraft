@@ -39,7 +39,9 @@ export default function MinecraftPanorama({
   speed = 1.0,
   isPaused = false,
   showParticles = true,
-  onThemeChange
+  shadersEnabled = true,
+  onThemeChange,
+  onToggleShaders
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -296,6 +298,65 @@ export default function MinecraftPanorama({
     const renderParticles = () => {
       ctx.clearRect(0, 0, width, height);
 
+      // Real-Time Minecraft Shaders Layer: Volumetric God Rays & Sunlight Bloom
+      if (shadersEnabled && activeThemeKey === 'sakura') {
+        const currentYaw = cameraPivotRef.current ? cameraPivotRef.current.rotation.y : 0;
+        const sunAngle = -Math.PI * 0.5; // Sun is in +X / Face 1 direction
+        const angleDiff = ((currentYaw - sunAngle + Math.PI) % (Math.PI * 2)) - Math.PI;
+        const sunFacing = Math.max(0, Math.cos(angleDiff));
+
+        if (sunFacing > 0.04) {
+          const sunScreenX = width * 0.5 - Math.sin(angleDiff) * (width * 0.88);
+          const sunScreenY = height * 0.22 - (pitchRef.current + 0.16) * (height * 0.55);
+
+          // 1. Radiant Sunlight Bloom
+          const sunGlow = ctx.createRadialGradient(sunScreenX, sunScreenY, 8, sunScreenX, sunScreenY, width * 0.75);
+          sunGlow.addColorStop(0, `rgba(255, 250, 220, ${0.55 * sunFacing})`);
+          sunGlow.addColorStop(0.12, `rgba(255, 215, 160, ${0.34 * sunFacing})`);
+          sunGlow.addColorStop(0.42, `rgba(255, 175, 195, ${0.12 * sunFacing})`);
+          sunGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.fillStyle = sunGlow;
+          ctx.fillRect(0, 0, width, height);
+
+          // 2. Volumetric God Rays (Light Shafts)
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          const time = performance.now() * 0.001;
+          for (let r = 0; r < 7; r++) {
+            const baseAngle = 0.38 + (r * 0.16) + Math.sin(time * 0.5 + r * 1.3) * 0.035;
+            const spread = 0.05 + Math.cos(time * 0.3 + r) * 0.012;
+            const rayLen = Math.max(width, height) * 1.6;
+
+            ctx.beginPath();
+            ctx.moveTo(sunScreenX, sunScreenY);
+            ctx.lineTo(sunScreenX + Math.cos(baseAngle - spread) * rayLen, sunScreenY + Math.sin(baseAngle - spread) * rayLen);
+            ctx.lineTo(sunScreenX + Math.cos(baseAngle + spread) * rayLen, sunScreenY + Math.sin(baseAngle + spread) * rayLen);
+            ctx.closePath();
+
+            const rayGrad = ctx.createRadialGradient(sunScreenX, sunScreenY, 15, sunScreenX, sunScreenY, rayLen * 0.85);
+            const rayAlpha = (0.075 + Math.sin(time * 0.7 + r * 1.8) * 0.02) * sunFacing;
+            rayGrad.addColorStop(0, `rgba(255, 245, 205, ${rayAlpha * 1.7})`);
+            rayGrad.addColorStop(0.35, `rgba(255, 215, 170, ${rayAlpha})`);
+            rayGrad.addColorStop(0.7, `rgba(255, 180, 200, ${rayAlpha * 0.4})`);
+            rayGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = rayGrad;
+            ctx.fill();
+          }
+
+          // 3. Anamorphic Lens Flare Streak when looking towards the sun
+          if (sunFacing > 0.5) {
+            const streakGrad = ctx.createLinearGradient(sunScreenX - width * 0.35, sunScreenY, sunScreenX + width * 0.35, sunScreenY);
+            const streakAlpha = (sunFacing - 0.5) * 0.3;
+            streakGrad.addColorStop(0, 'rgba(255, 220, 180, 0)');
+            streakGrad.addColorStop(0.5, `rgba(255, 245, 220, ${streakAlpha})`);
+            streakGrad.addColorStop(1, 'rgba(255, 220, 180, 0)');
+            ctx.fillStyle = streakGrad;
+            ctx.fillRect(sunScreenX - width * 0.35, sunScreenY - 3, width * 0.7, 6);
+          }
+          ctx.restore();
+        }
+      }
+
       particles.forEach((p) => {
         p.sway += p.swaySpeed;
         p.flipAngle += p.flipSpeed;
@@ -334,6 +395,12 @@ export default function MinecraftPanorama({
           // 3D tumbling fluttering Sakura Petal
           const flipScale = Math.cos(p.flipAngle);
           ctx.scale(1, Math.abs(flipScale) * 0.8 + 0.2);
+
+          // Subtle bloom aura on petals when shaders are active
+          if (shadersEnabled) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(255, 175, 205, 0.65)';
+          }
 
           // Authentic Minecraft pixelated sakura petal
           ctx.fillStyle = p.color;
@@ -375,7 +442,7 @@ export default function MinecraftPanorama({
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(animId);
     };
-  }, [activeThemeKey, showParticles]);
+  }, [activeThemeKey, showParticles, shadersEnabled]);
 
   const activeTheme = PANORAMA_THEMES[activeThemeKey] || PANORAMA_THEMES.classic;
 
@@ -406,7 +473,7 @@ export default function MinecraftPanorama({
         />
       )}
 
-      {/* 3. Floating Ambient Particles Overlay */}
+      {/* 3. Floating Ambient Particles & Real-Time Shaders Overlay */}
       {showParticles && (
         <canvas 
           ref={particleCanvasRef}
@@ -414,7 +481,10 @@ export default function MinecraftPanorama({
         />
       )}
 
-      {/* 4. Authentic Minecraft Vignette & Readability Gradient */}
+      {/* 4. Real-Time Shader Lighting & Vignette Overlay */}
+      {shadersEnabled && activeThemeKey === 'sakura' && (
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-amber-500/10 via-transparent to-pink-400/15 mix-blend-screen transition-opacity duration-700" />
+      )}
       <div 
         className={`absolute inset-0 pointer-events-none ${activeTheme.vignetteOpacity} transition-colors duration-700`} 
       />
@@ -425,13 +495,13 @@ export default function MinecraftPanorama({
         className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-black/50" 
       />
 
-      {/* 5. Quick Theme Selector Pill (Floating bottom-right or accessible anytime) */}
+      {/* 5. Quick Theme & Shaders Selector Pill */}
       <div 
-        className="absolute bottom-12 right-4 z-20 hidden md:flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1.5 border-2 border-neutral-700 shadow-xl pointer-events-auto"
+        className="absolute bottom-12 right-4 z-20 hidden md:flex items-center gap-2 bg-black/75 backdrop-blur-md px-3 py-1.5 border-2 border-neutral-700 shadow-xl pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="font-pixel text-[10px] text-[#ffff55] mr-1">REALM:</span>
-        {Object.values(PANORAMA_THEMES).map((thm) => (
+        <span className="font-pixel text-[10px] text-[#ffff55]">REALM:</span>
+        {Object.values(PANORAMA_THEMES).filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i).map((thm) => (
           <button
             key={thm.id}
             onClick={() => handleSelectTheme(thm.id)}
@@ -441,9 +511,25 @@ export default function MinecraftPanorama({
                 : 'text-gray-400 border-neutral-800 hover:text-white hover:border-neutral-600'
             }`}
           >
-            {thm.name}
+            {thm.shortName || thm.name}
           </button>
         ))}
+
+        <span className="text-neutral-600 text-xs font-mono">|</span>
+
+        <button
+          onClick={() => {
+            if (onToggleShaders) onToggleShaders();
+          }}
+          className={`px-2 py-0.5 font-pixel text-[9px] border transition-all cursor-pointer ${
+            shadersEnabled
+              ? 'bg-[#ffff55]/20 text-[#ffff55] border-[#ffff55] shadow-sm shadow-yellow-500/20'
+              : 'text-gray-500 border-neutral-800 hover:text-white'
+          }`}
+          title="Toggle BSL/Complementary Volumetric Shaders"
+        >
+          {shadersEnabled ? '✨ SHADERS ON' : 'SHADERS OFF'}
+        </button>
       </div>
     </div>
   );

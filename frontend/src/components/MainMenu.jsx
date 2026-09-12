@@ -38,6 +38,7 @@ export default function MainMenu() {
   });
   const [panoramaSpeed, setPanoramaSpeed] = useState(1.0);
   const [panoramaPaused, setPanoramaPaused] = useState(false);
+  const [shadersEnabled, setShadersEnabled] = useState(true);
 
   const handleThemeChange = (newTheme) => {
     const actualTheme = newTheme === 'cherry' ? 'sakura' : newTheme;
@@ -47,7 +48,7 @@ export default function MainMenu() {
 
   // Cycle through available themes quickly
   const cycleTheme = () => {
-    const themeKeys = Object.keys(PANORAMA_THEMES);
+    const themeKeys = Object.keys(PANORAMA_THEMES).filter((t, i, arr) => arr.indexOf(t) === i);
     const currentIndex = themeKeys.indexOf(panoramaTheme);
     const nextTheme = themeKeys[(currentIndex + 1) % themeKeys.length];
     handleThemeChange(nextTheme);
@@ -105,7 +106,9 @@ export default function MainMenu() {
         theme={panoramaTheme}
         speed={panoramaSpeed}
         isPaused={panoramaPaused}
+        shadersEnabled={shadersEnabled}
         onThemeChange={handleThemeChange}
+        onToggleShaders={() => setShadersEnabled(!shadersEnabled)}
       />
 
       {/* Top Banner / Navigation helper */}
@@ -117,10 +120,20 @@ export default function MainMenu() {
             title="Click to switch Minecraft Panorama Realm"
           >
             <Compass size={14} className="text-[#55ff55] animate-spin-slow" />
-            <span>REALM: {PANORAMA_THEMES[panoramaTheme]?.name.toUpperCase() || 'CLASSIC'}</span>
+            <span>REALM: {PANORAMA_THEMES[panoramaTheme]?.name.toUpperCase() || 'SAKURA BIOME'}</span>
           </button>
         </div>
         <div className="flex items-center gap-3 sm:gap-4 text-xs font-pixel">
+          {/* Shaders On / Off Toggle */}
+          <button
+            onClick={() => setShadersEnabled(!shadersEnabled)}
+            className="hover:text-[#ffff55] flex items-center gap-1.5 transition-colors cursor-pointer"
+            title={shadersEnabled ? "Minecraft Shaders: Enabled (BSL / Complementary Lighting)" : "Vanilla Minecraft Lighting"}
+          >
+            <Sparkles size={14} className={shadersEnabled ? "text-[#ffff55] animate-pulse" : "text-gray-500"} />
+            <span className="hidden sm:inline">{shadersEnabled ? 'SHADERS ON' : 'SHADERS OFF'}</span>
+          </button>
+
           {/* Pause / Resume Live Background Motion */}
           <button
             onClick={() => setPanoramaPaused(!panoramaPaused)}
@@ -504,6 +517,20 @@ export default function MainMenu() {
                         className={`mc-button-base px-3 py-1 font-pixel text-xs ${panoramaPaused ? 'text-[#ff5555]' : 'text-[#55ff55]'}`}
                       >
                         {panoramaPaused ? 'PAUSED' : 'ROTATING'}
+                      </button>
+                    </div>
+
+                    {/* Shaders Pack Toggle */}
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-neutral-700">
+                      <div>
+                        <span className="font-pixel text-xs text-white block">MINECRAFT SHADERS (BSL / COMPLEMENTARY)</span>
+                        <span className="font-sans text-[10px] text-gray-400">Volumetric God Rays, Sunlight Bloom & Ambient Occlusion</span>
+                      </div>
+                      <button 
+                        onClick={() => setShadersEnabled(!shadersEnabled)}
+                        className={`mc-button-base px-3 py-1 font-pixel text-xs ${shadersEnabled ? 'text-[#ffff55] border-[#ffff55]' : 'text-gray-400'}`}
+                      >
+                        {shadersEnabled ? '✨ SHADERS ON' : 'VANILLA'}
                       </button>
                     </div>
 
